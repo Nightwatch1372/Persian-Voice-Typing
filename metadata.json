@@ -1,0 +1,7 @@
+{
+  "name": "Persian-Voice-Typing",
+  "description": "An intelligent Persian voice-to-text application capable of understanding unclear pronunciation and correcting context using advanced AI models.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
