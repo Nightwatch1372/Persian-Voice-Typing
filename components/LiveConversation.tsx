@@ -4,6 +4,7 @@ import { getLiveClient } from '../services/geminiService';
 import { MODEL_NAMES } from '../constants';
 import { createAudioContext } from '../utils/audioUtils';
 import { MicrophoneIcon, StopIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
+import { AudioVisualizer } from './AudioVisualizer';
 
 // Helper for PCM encoding
 function encode(bytes: Uint8Array) {
@@ -63,6 +64,8 @@ export const LiveConversation: React.FC = () => {
   const [status, setStatus] = useState("آماده برای مکالمه");
   const [volume, setVolume] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [playbackStream, setPlaybackStream] = useState<MediaStream | null>(null);
 
   // Refs for audio handling to avoid re-renders
   const inputContextRef = useRef<AudioContext | null>(null);
@@ -92,6 +95,10 @@ export const LiveConversation: React.FC = () => {
       const outputNode = outputCtx.createGain();
       outputNode.connect(outputCtx.destination);
       
+      const dest = outputCtx.createMediaStreamDestination();
+      outputNode.connect(dest);
+      setPlaybackStream(dest.stream);
+
       inputNodeRef.current = inputNode;
       outputNodeRef.current = outputNode;
 
@@ -108,6 +115,7 @@ export const LiveConversation: React.FC = () => {
 
             // Setup Microphone Stream
             const source = inputCtx.createMediaStreamSource(stream);
+            setMicStream(stream);
             const scriptProcessor = inputCtx.createScriptProcessor(4096, 1, 1);
             scriptProcessorRef.current = scriptProcessor;
 
@@ -207,6 +215,8 @@ export const LiveConversation: React.FC = () => {
     setIsActive(false);
     setStatus("مکالمه پایان یافت");
     setVolume(0);
+    setMicStream(null);
+    setPlaybackStream(null);
 
     // Stop streams
     if (streamRef.current) {
@@ -265,6 +275,17 @@ export const LiveConversation: React.FC = () => {
         >
              <MicrophoneIcon className="w-16 h-16 text-white" />
         </div>
+      </div>
+
+      <div className={`w-full max-w-sm transition-all duration-500 overflow-hidden flex flex-col gap-2 ${isActive ? 'h-32 opacity-100 mb-6' : 'h-0 opacity-0 mb-0'}`}>
+         <div className="flex flex-col items-center">
+            <span className="text-xs text-indigo-500 font-bold mb-1">شما</span>
+            <AudioVisualizer stream={micStream} isActive={isActive} barColor="#4f46e5" />
+         </div>
+         <div className="flex flex-col items-center">
+            <span className="text-xs text-green-500 font-bold mb-1">هوش مصنوعی</span>
+            <AudioVisualizer stream={playbackStream} isActive={isActive} barColor="#22c55e" />
+         </div>
       </div>
 
       <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 transition-colors duration-200">{status}</h2>
