@@ -133,6 +133,30 @@ export const addTextDiacritics = async (text: string): Promise<string> => {
 /**
  * Generates speech from text
  */
+export const optimizeTextForTTS = async (text: string): Promise<string> => {
+  checkApiKey();
+  try {
+    return await withRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: MODEL_NAMES.SMART_FIX,
+        contents: {
+          parts: [{ text: `Text to optimize for TTS: ${text}` }]
+        },
+        config: {
+          systemInstruction: PROMPTS.TTS_OPTIMIZE_SYSTEM,
+        }
+      });
+      return response.text || "";
+    });
+  } catch (error) {
+    console.error("TTS optimization error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generates speech from text
+ */
 export const generateSpeech = async (text: string): Promise<string> => {
   checkApiKey();
   try {

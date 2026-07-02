@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MicrophoneIcon, StopIcon, SparklesIcon, DocumentDuplicateIcon, TrashIcon, CheckIcon, BookOpenIcon, SpeakerWaveIcon, LanguageIcon, PencilSquareIcon, PauseIcon, BoltIcon, LanguageIcon as DiacriticIcon, FaceSmileIcon } from '@heroicons/react/24/solid';
-import { transcribeAudio, smartCorrectText, generateSpeech, translateText, addTextDiacritics } from '../services/geminiService';
+import { MicrophoneIcon, StopIcon, SparklesIcon, DocumentDuplicateIcon, TrashIcon, CheckIcon, BookOpenIcon, SpeakerWaveIcon, LanguageIcon, PencilSquareIcon, PauseIcon, BoltIcon, LanguageIcon as DiacriticIcon, FaceSmileIcon, MegaphoneIcon } from '@heroicons/react/24/solid';
+import { transcribeAudio, smartCorrectText, generateSpeech, translateText, addTextDiacritics, optimizeTextForTTS } from '../services/geminiService';
 import { playPCM } from '../utils/audioUtils';
 import { AudioState } from '../types';
 import { Sidebar, Replacement } from './Sidebar';
@@ -248,6 +248,26 @@ export const SmartWriter: React.FC<{ isOnline?: boolean }> = ({ isOnline = true 
     } finally {
       setState(AudioState.IDLE);
     }
+  };
+
+  const handleOptimizeTTS = async () => {
+      if (!text.trim()) return;
+      setError(null);
+      setState(AudioState.PROCESSING);
+      try {
+          const optimized = await optimizeTextForTTS(text);
+          if (optimized) {
+              setText(optimized);
+          }
+      } catch (err: any) {
+          if (err.message === 'MISSING_API_KEY') {
+              setError("کلید API یافت نشد.");
+          } else {
+              setError("خطا در بهینه‌سازی صوتی.");
+          }
+      } finally {
+          setState(AudioState.IDLE);
+      }
   };
   
   const handleDiacritics = async () => {
@@ -548,7 +568,7 @@ export const SmartWriter: React.FC<{ isOnline?: boolean }> = ({ isOnline = true 
         
         {/* Manual Fix & Diacritics Buttons Split */}
         {!autoFix && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                  <button
                     onClick={handleDiacritics}
                     disabled={!text.trim() || state !== AudioState.IDLE || !isOnline}
@@ -572,6 +592,18 @@ export const SmartWriter: React.FC<{ isOnline?: boolean }> = ({ isOnline = true 
                 >
                     <SparklesIcon className="w-5 h-5" />
                     اصلاح دستی
+                </button>
+                <button
+                    onClick={handleOptimizeTTS}
+                    disabled={!text.trim() || state !== AudioState.IDLE || !isOnline}
+                    className={`flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 ${
+                        !isOnline
+                        ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-600 cursor-not-allowed'
+                        : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-800/50'
+                    }`}
+                >
+                    <MegaphoneIcon className="w-5 h-5" />
+                    بهینه‌ساز TTS
                 </button>
             </div>
         )}
